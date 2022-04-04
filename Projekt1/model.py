@@ -108,17 +108,3 @@ class UNet(Module):
 			map = F.interpolate(map, self.outSize)
 		# return the segmentation map
 		return map
-name = "000090528_jpg.rf.d50e89610e5c97c61632c290692f3e75"
-width = 416
-height =416
-
-img = read_image(f'./data/train/images/{name}.jpg')
-
-with open(f'./data/train/labels/{name}.txt','r') as f:
-	boxes = [[float(number)*height for number in element.replace('\n','').split(' ')][1:] for element in f.readlines()]
-	order = [0,2,1,3]
-	boxes = torch.IntTensor([[int(row[i]) for i in order] for row in boxes])
-
-img = draw_bounding_boxes(img,boxes)
-plt.imshow(img.permute(1, 2, 0))
-plt.show()
