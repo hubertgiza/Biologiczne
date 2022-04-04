@@ -15,13 +15,13 @@ def open_img(img_dir_path, img_path):
 
 def img_to_mask(img_dir_path, img_path, coords):
     img = open_img(img_dir_path, img_path)
-    img_height = img.shape[1]
-    img_width = img.shape[2]
+    img_height = img.shape[1] + 1
+    img_width = img.shape[2] + 1
     mask = np.zeros(shape=(img_width, img_height))
     if coords != (-1, -1, -1, -1):
         xmin, ymin, xmax, ymax = coords
-        for x in range(xmin, xmax):
-            for y in range(ymin, ymax):
+        for x in range(xmin, xmax+1):
+            for y in range(ymin, ymax+1):
                 mask[x,y] = 1
     return mask
 
