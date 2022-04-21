@@ -14,17 +14,17 @@ from torchvision import transforms
 from tqdm import tqdm
 
 
-imagePaths = [os.path.join(config.IMAGE_DATASET_PATH,image) for image in sorted(os.listdir(config.IMAGE_DATASET_PATH))]
-maskPaths = [os.path.join(config.MASK_DATASET_PATH,mask) for mask in sorted(os.listdir(config.MASK_DATASET_PATH))]
+image_paths = [os.path.join(config.IMAGE_DATASET_PATH,image) for image in sorted(os.listdir(config.IMAGE_DATASET_PATH))]
+mask_paths = [os.path.join(config.MASK_DATASET_PATH,mask) for mask in sorted(os.listdir(config.MASK_DATASET_PATH))]
 
-split = train_test_split(imagePaths, maskPaths,test_size=config.TEST_SPLIT, random_state=42)
+split = train_test_split(image_paths, mask_paths,test_size=config.TEST_SPLIT, random_state=42)
 
-(trainImages, testImages) = split[:2]
-(trainMasks, testMasks) = split[2:]
+(train_images, test_images) = split[:2]
+(trains_masks, test_masks) = split[2:]
 
 print("[INFO] saving testing image paths...")
 f = open(config.TEST_PATHS, "w")
-f.write("\n".join(testImages))
+f.write("\n".join(test_images))
 f.close()
 
 transforms = transforms.Compose([transforms.ToPILImage(),
@@ -32,62 +32,62 @@ transforms = transforms.Compose([transforms.ToPILImage(),
                                  transforms.ToTensor()])
 
 
-trainDS = SegmentationDataset(imagePaths=trainImages, maskPaths=trainMasks,transforms=transforms)
-testDS = SegmentationDataset(imagePaths=testImages, maskPaths=testMasks,transforms=transforms)
+trains_ds = SegmentationDataset(imagePaths=train_images, maskPaths=trains_masks,transforms=transforms)
+test_ds = SegmentationDataset(imagePaths=test_images, maskPaths=test_masks,transforms=transforms)
 
-print(f"[INFO] found {len(trainDS)} examples in the training set...")
+print(f"[INFO] found {len(trains_ds)} examples in the training set...")
 
-trainLoader = DataLoader(trainDS, shuffle=True,batch_size=config.BATCH_SIZE, pin_memory=config.PIN_MEMORY, num_workers=os.cpu_count())
-testLoader = DataLoader(testDS, shuffle=False,batch_size=config.BATCH_SIZE, pin_memory=config.PIN_MEMORY,num_workers=os.cpu_count())
+train_loader = DataLoader(trains_ds, shuffle=True,batch_size=config.BATCH_SIZE, pin_memory=config.PIN_MEMORY, num_workers=os.cpu_count())
+test_loader = DataLoader(test_ds, shuffle=False,batch_size=config.BATCH_SIZE, pin_memory=config.PIN_MEMORY,num_workers=os.cpu_count())
 
 unet = UNet().to(config.DEVICE)
 
-lossFunc = BCEWithLogitsLoss()
-opt = Adam(unet.parameters(), lr=config.INIT_LR)
+loss_function = BCEWithLogitsLoss()
+optimizer = Adam(unet.parameters(), lr=config.INIT_LR)
 
-trainSteps = len(trainDS) // config.BATCH_SIZE
-testSteps = len(testDS) // config.BATCH_SIZE
+train_steps = len(trains_ds) // config.BATCH_SIZE
+test_steps = len(test_ds) // config.BATCH_SIZE
 
 H = {"train_loss": [], "test_loss": []}
 
 
 print("[INFO] training the network...")
-startTime = time.time()
+start_time = time.time()
 for e in tqdm(range(config.NUM_EPOCHS)):
 	unet.train()
-	totalTrainLoss = 0
-	totalTestLoss = 0
+	total_train_loss = 0
+	total_test_loss = 0
 
-	for (i, (x, y)) in enumerate(trainLoader):
+	for (i, (x, y)) in enumerate(train_loader):
 		(x, y) = (x.to(config.DEVICE), y.to(config.DEVICE))
 
 		pred = unet(x)
-		loss = lossFunc(pred, y)
+		loss = loss_function(pred, y)
 
-		opt.zero_grad()
+		optimizer.zero_grad()
 		loss.backward()
-		opt.step()
+		optimizer.step()
 
-		totalTrainLoss += loss
+		total_train_loss += loss
 
 	with torch.no_grad():
 		unet.eval()
-		for (x, y) in testLoader:
+		for (x, y) in test_loader:
 			(x, y) = (x.to(config.DEVICE), y.to(config.DEVICE))
 			pred = unet(x)
-			totalTestLoss += lossFunc(pred, y)
+			total_test_loss += loss_function(pred, y)
 
-	avgTrainLoss = totalTrainLoss / trainSteps
-	avgTestLoss = totalTestLoss / testSteps
+	average_train_loss = total_train_loss / train_steps
+	average_test_loss = total_test_loss / test_steps
 
-	H["train_loss"].append(avgTrainLoss.cpu().detach().numpy())
-	H["test_loss"].append(avgTestLoss.cpu().detach().numpy())
+	H["train_loss"].append(average_train_loss.cpu().detach().numpy())
+	H["test_loss"].append(average_test_loss.cpu().detach().numpy())
 
 	print("[INFO] EPOCH: {}/{}".format(e + 1, config.NUM_EPOCHS))
-	print("Train loss: {:.6f}, Test loss: {:.4f}".format(avgTrainLoss, avgTestLoss))
+	print("Train loss: {:.6f}, Test loss: {:.4f}".format(average_train_loss, average_test_loss))
 
-endTime = time.time()
-print("[INFO] total time taken to train the model: {:.2f}s".format(endTime - startTime))
+end_time = time.time()
+print("[INFO] total time taken to train the model: {:.2f}s".format(end_time - start_time))
 
 plt.style.use("ggplot")
 plt.figure()
