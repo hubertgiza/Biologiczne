@@ -5,7 +5,7 @@ import torch
 import os
 
 from PIL import Image
-
+from keras import backend as K
 
 def prepare_plot(origImage, origMask, predMask):
 	figure, ax = plt.subplots(nrows=1, ncols=3, figsize=(50, 50))
@@ -45,6 +45,11 @@ def make_predictions(model, imagePath):
 
 		prepare_plot(orig, gtMask, predMask)
 
+def iou(y_true, y_pred, smooth = 100):
+    intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
+    sum_ = K.sum(K.square(y_true), axis = -1) + K.sum(K.square(y_pred), axis=-1)
+    jac = (intersection + smooth) / (sum_ - intersection + smooth)
+    return jac
 print("[INFO] loading up test image paths...")
 imagePaths = open(config.TEST_PATHS).read().strip().split("\n")
 imagePaths = np.random.choice(imagePaths, size=10)
