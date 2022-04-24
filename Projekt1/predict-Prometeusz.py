@@ -6,9 +6,15 @@ import torch
 import os
 
 from PIL import Image
+<<<<<<< HEAD
+from keras import backend as K
+
+def prepare_plot(origImage, origMask, predMask):
+=======
 from torchvision.transforms import Resize
 
 def prepare_plot(original_image, original_mask, predicted_mask):
+>>>>>>> 007f2fece20e0cb0caa06981df3518b892d37f78
 	figure, ax = plt.subplots(nrows=1, ncols=3, figsize=(50, 50))
 	ax[0].imshow(original_image)
 	ax[1].imshow(original_mask)
@@ -55,8 +61,8 @@ def make_predictions(model, imagePath,calculate_accuracy=False):
 			prepare_plot(original_image, ground_truth_mask, predicted_mask)
 
 def iou(y_true, y_pred, smooth = 100):
-    intersection = np.sum(y_true*y_pred)
-    sum_ = np.sum(y_true|y_pred)
+    intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
+    sum_ = K.sum(K.square(y_true), axis = -1) + K.sum(K.square(y_pred), axis=-1)
     jac = (intersection + smooth) / (sum_ - intersection + smooth)
     return jac
 print("[INFO] loading up test image paths...")
