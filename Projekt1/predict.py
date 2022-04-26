@@ -21,13 +21,6 @@ def prepare_plot(original_image, original_mask, predicted_mask):
 	figure.tight_layout()
 	plt.show()
 
-def iou(original_mask, predicted_mask, smooth = 100):
-	predicted_mask = np.apply_along_axis(np.vectorize(lambda x: 1 if x!=0 else 0),0,predicted_mask)
-	intersection = np.sum(original_mask * predicted_mask)
-	sum_ = np.sum(np.apply_along_axis(np.vectorize(lambda x: 1 if x==2 else x),0,(original_mask+predicted_mask)))
-	jac = (intersection + smooth) / (sum_ - intersection + smooth)
-	return jac
-
 def make_predictions(model, imagePath,calculate_accuracy=False):
 	model.eval()
 
